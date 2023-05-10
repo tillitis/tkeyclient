@@ -1,10 +1,10 @@
 // Copyright (C) 2022, 2023 - Tillitis AB
 // SPDX-License-Identifier: GPL-2.0-only
 
-// Package tk1 provides a connection to a Tillitis TKey security
-// stick. To create a new connection:
+// Package tkeyclient provides a connection to a Tillitis TKey
+// security stick. To create a new connection:
 //
-//	tk := tk1.New()
+//	tk := tkeyclient.New()
 //	err := tk.Connect(port)
 //
 // Then you can start using it by asking it to identify itself:
@@ -23,7 +23,7 @@
 // When writing your app specific protocol you might still want to use
 // the framing protocol provided here. See NewFrameBuf() and
 // ReadFrame().
-package tk1
+package tkeyclient
 
 import (
 	"encoding/binary"
