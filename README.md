@@ -1,4 +1,4 @@
-[![ci](https://github.com/tillitis/tkeyclient/actions/workflows/ci.yaml/badge.svg?branch=main&event=push)](https://github.com/tillitis/tkeyclient/actions/workflows/ci.yaml) [![Go Reference](https://pkg.go.dev/badge/tillitis/tkey-client.svg)](https://pkg.go.dev/github.com/tillitis/tkeyclient)
+[![ci](https://github.com/tillitis/tkeyclient/actions/workflows/ci.yaml/badge.svg?branch=main&event=push)](https://github.com/tillitis/tkeyclient/actions/workflows/ci.yaml) [![Go Reference](https://pkg.go.dev/badge/github.com/tillitis/tkeyclient.svg)](https://pkg.go.dev/github.com/tillitis/tkeyclient)
 
 # Tillitis TKey Client package
 
