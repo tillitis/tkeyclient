@@ -21,6 +21,7 @@ missingok_files=(
 LICENSE
 Makefile
 README.md
+RELEASE.md
 go.mod
 go.sum
 gotools/Makefile
