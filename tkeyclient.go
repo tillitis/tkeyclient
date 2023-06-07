@@ -16,9 +16,9 @@
 //	err = tk.LoadAppFromFile(*fileName)
 //
 // After this, you will have to switch to a new protocol specific to
-// the app, see for instance the package
-// github.com/tillitis/tillitis-key1-apps/tk1sign for one such app
-// specific protocol.
+// the app, see for instance the
+// https://github.com/tillitis/tkey-sign for one such app specific
+// protocol.
 //
 // When writing your app specific protocol you might still want to use
 // the framing protocol provided here. See NewFrameBuf() and
