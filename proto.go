@@ -5,6 +5,7 @@ package tkeyclient
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 )
@@ -202,6 +203,8 @@ func (err constError) Error() string {
 
 const ErrResponseStatusNotOK = constError("response status not OK")
 
+var errReadTimeout = errors.New("Read timeout")
+
 // ReadFrame reads a response in the framing protocol. The header byte
 // is first parsed. If the header has response status Not OK,
 // ErrResponseStatusNotOK is returned. Header command length and
@@ -229,7 +232,7 @@ func (tk TillitisKey) ReadFrame(expectedResp Cmd, expectedID int) ([]byte, Frami
 		return nil, FramingHdr{}, fmt.Errorf("Read: %w", err)
 	}
 	if n == 0 {
-		return nil, FramingHdr{}, fmt.Errorf("Read timeout")
+		return nil, FramingHdr{}, errReadTimeout
 	}
 
 	hdr, err := parseframe(rxHdr[0])

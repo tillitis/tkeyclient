@@ -29,6 +29,7 @@ package tkeyclient
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -112,6 +113,21 @@ func (tk TillitisKey) SetReadTimeout(seconds int) error {
 	var t time.Duration = -1
 	if seconds > 0 {
 		t = time.Duration(seconds) * time.Second
+	}
+	if err := tk.conn.SetReadTimeout(t); err != nil {
+		return fmt.Errorf("SetReadTimeout: %w", err)
+	}
+	return nil
+}
+
+// SetReadTimeoutMS sets the timeout of the underlying serial connection
+// to the TKey. Pass 0 seconds to not have any timeout. Note that the
+// timeout implemented in the serial lib only works for simple Read().
+// E.g. io.ReadFull() will Read() until the buffer is full.
+func (tk TillitisKey) SetReadTimeoutMS(milliseconds int) error {
+	var t time.Duration = -1
+	if milliseconds > 0 {
+		t = time.Duration(milliseconds) * time.Millisecond
 	}
 	if err := tk.conn.SetReadTimeout(t); err != nil {
 		return fmt.Errorf("SetReadTimeout: %w", err)
@@ -259,21 +275,94 @@ func (tk TillitisKey) LoadApp(bin []byte, secretPhrase []byte) error {
 	}
 
 	// Load the file
+	const queueLen = 3 // TODO queueLen=1 works
 	var offset int
+	var queue []int
+	cmdID := 0
 	var deviceDigest [32]byte
 
+	// TODO should we on error also receive what's outstanding in the
+	// queue? to leave stick in a better state for new attempts to
+	// load app. hm, but error is prob already fatal
+
+	err = tk.SetReadTimeoutMS(5)
+	if err != nil {
+		return fmt.Errorf("SetReadTimeout: %w", err)
+	}
+
+	// for nsent := 0; offset < binLen; offset += nsent {
+	// 	if binLen-offset <= cmdLoadAppData.CmdLen().Bytelen()-1 {
+	// 		deviceDigest, nsent, err = tk.loadAppData(bin[offset:], true)
+	// 	} else {
+	// 		_, nsent, err = tk.loadAppData(bin[offset:], false)
+	// 	}
+	// 	if err != nil {
+	// 		return fmt.Errorf("loadAppData: %w", err)
+	// 	}
+	// }
+	// if offset > binLen {
+	// 	return fmt.Errorf("transmitted more than expected")
+	// }
+
 	for nsent := 0; offset < binLen; offset += nsent {
-		if binLen-offset <= cmdLoadAppData.CmdLen().Bytelen()-1 {
-			deviceDigest, nsent, err = tk.loadAppData(bin[offset:], true)
+		if len(queue) < queueLen {
+			nsent, err = tk.sendCmdLoadAppData(cmdID, bin[offset:])
+			if err != nil {
+				return fmt.Errorf("sendCmdLoadAppData: %w", err)
+			}
+			queue = append(queue, cmdID)
+			fmt.Printf("QUEUE after send ID:%d: %v (nsent:%d offset:%d binlen:%d)\n", cmdID, queue, nsent, offset, binLen)
+			cmdID++
+			if cmdID > 3 {
+				cmdID = 0
+			}
 		} else {
-			_, nsent, err = tk.loadAppData(bin[offset:], false)
+			nsent = 0
+		}
+
+		if len(queue) == 0 {
+			fmt.Printf("QUEUE empty\n")
+			continue
+		}
+
+		// the response of the last frame will have the app digest.
+		var received bool
+		if (offset + nsent) == binLen {
+			received, deviceDigest, err = tk.tryReceiveRspLoadAppData(queue[0], true)
+		} else {
+			received, _, err = tk.tryReceiveRspLoadAppData(queue[0], false)
 		}
 		if err != nil {
-			return fmt.Errorf("loadAppData: %w", err)
+			return fmt.Errorf("receiveRspLoadAppData: %w", err)
+		}
+		if received {
+			_, queue = queue[0], queue[1:]
+			fmt.Printf("QUEUE after recv: %v\n", queue)
+		} else {
+			fmt.Printf("QUEUE: %v\n", queue)
 		}
 	}
 	if offset > binLen {
 		return fmt.Errorf("transmitted more than expected")
+	}
+
+	// Don't time out, wait for the last frames
+	err = tk.SetReadTimeout(-1)
+	if err != nil {
+		return fmt.Errorf("SetReadTimeout: %w", err)
+	}
+	var remainingFrames = len(queue)
+	fmt.Printf("Remaining frames: %d\n", remainingFrames)
+	for i, id := range queue {
+		var received bool
+		if i == (remainingFrames - 1) { // If we are waiting for the last frame
+			received, deviceDigest, err = tk.tryReceiveRspLoadAppData(id, true)
+		} else {
+			received, _, err = tk.tryReceiveRspLoadAppData(id, false)
+		}
+		if err != nil {
+			return fmt.Errorf("receiveRspLoadAppData: %w", err)
+		}
 	}
 
 	digest := blake2s.Sum256(bin)
@@ -333,8 +422,7 @@ func (tk TillitisKey) loadApp(size int, secretPhrase []byte) error {
 }
 
 // loadAppData loads a chunk of the raw app binary into the TKey.
-func (tk TillitisKey) loadAppData(content []byte, last bool) ([32]byte, int, error) {
-	id := 2
+func (tk TillitisKey) loadAppData(id int, content []byte, last bool) ([32]byte, int, error) {
 	tx, err := NewFrameBuf(cmdLoadAppData, id)
 	if err != nil {
 		return [32]byte{}, 0, err
@@ -394,4 +482,61 @@ func printDigest(md [32]byte) {
 		digest += " "
 	}
 	le.Printf(digest + "\n")
+}
+
+func (tk TillitisKey) tryReceiveRspLoadAppData(expectedID int, last bool) (bool, [32]byte, error) {
+	var expectedResp Cmd
+	if last {
+		expectedResp = rspLoadAppDataReady
+	} else {
+		expectedResp = rspLoadAppData
+	}
+	rx, _, err := tk.ReadFrame(expectedResp, expectedID)
+	Dump(fmt.Sprintf("LoadAppData rx (expectedID:%d)", expectedID), rx)
+	if err != nil {
+		if errors.Is(err, errReadTimeout) {
+			fmt.Printf("no frame to read yet\n")
+			return false, [32]byte{}, nil
+		}
+		fmt.Printf("Here?\n")
+		return false, [32]byte{}, fmt.Errorf("ReadFrame: %w", err)
+	}
+
+	if rx[2] != StatusOK {
+		return false, [32]byte{}, fmt.Errorf("LoadAppData NOK (expectedID:%d)", expectedID)
+	}
+
+	if last {
+		var digest [32]byte
+		copy(digest[:], rx[3:])
+		return true, digest, nil
+	}
+
+	return true, [32]byte{}, nil
+}
+
+func (tk TillitisKey) sendCmdLoadAppData(id int, content []byte) (int, error) {
+	tx, err := NewFrameBuf(cmdLoadAppData, id)
+	if err != nil {
+		return 0, err
+	}
+
+	payload := make([]byte, CmdLen128.Bytelen()-1)
+	copied := copy(payload, content)
+
+	// Add padding if not filling the payload buffer.
+	if copied < len(payload) {
+		padding := make([]byte, len(payload)-copied)
+		copy(payload[copied:], padding)
+	}
+
+	copy(tx[2:], payload)
+
+	Dump("LoadAppData tx", tx)
+
+	if err = tk.Write(tx); err != nil {
+		return 0, err
+	}
+
+	return copied, nil
 }
