@@ -8,8 +8,9 @@ upload device apps, and communicate with it.
 See the [Go doc](https://pkg.go.dev/github.com/tillitis/tkeyclient)
 for `tkeyclient` for details on how to call the functions.
 
-See [apps repo](https://github.com/tillitis/tillitis-key1-apps/) for
-example client and device applications.
+See [tkey-ssh-agent](https://github.com/tillitis/tkey-ssh-agent) or
+[tkeysign](https://github.com/tillitis/tkeysign) for
+example applications using this Go package.
 
 Release notes in [RELEASE.md](RELEASE.md).
 
