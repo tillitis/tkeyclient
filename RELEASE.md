@@ -1,5 +1,15 @@
 # Release notes
 
+## v1.0.0
+Going to version 1.0.0 to indicate that tkeyclient is stable and
+production ready, according to Semantic Versioning.
+
+- Bumping go dependencies.
+- Removing stray dependency go-winres.
+- Go lint using golangci-lint-action in CI.
+- Updating README and copyright notice
+
+
 ## v0.0.8
 Update dependencies. Updating the serial package to keep tkeyclient
 buildable on darwin with go 1.21.
