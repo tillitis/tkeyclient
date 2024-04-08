@@ -24,9 +24,6 @@ README.md
 RELEASE.md
 go.mod
 go.sum
-gotools/Makefile
-gotools/go.mod
-gotools/go.sum
 )
 
 is_missingok() {

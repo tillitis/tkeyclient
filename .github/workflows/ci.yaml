@@ -13,10 +13,10 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/tillitis/tkey-builder:2
+      image: ghcr.io/tillitis/tkey-builder:4
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           # fetch-depth: 0
           persist-credentials: false
@@ -28,9 +28,6 @@ jobs:
 
       - name: make
         run: make
-
-      - name: lint go code
-        run: make lint
 
       - name: check for SPDX tags
         run: ./tools/spdx-ensure
