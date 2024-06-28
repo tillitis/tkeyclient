@@ -202,14 +202,14 @@ func (err constError) Error() string {
 
 const ErrResponseStatusNotOK = constError("response status not OK")
 
-// ReadFrame reads a response in the framing protocol. The header byte
-// is first parsed. If the header has response status Not OK,
-// ErrResponseStatusNotOK is returned. Header command length and
-// endpoint are then checked against the expectedResp parameter,
-// header ID is checked against expectedID. The response code (first
-// byte after header) is also checked against the code in
-// expectedResp. It returns the whole frame read, the parsed header
-// byte, and any error separately.
+// ReadFrame reads a response in the framing protocol. It expects the
+// expected response endpoint and length in the expectedResp, and the
+// expected frame ID in expectedID.
+//
+// Returns the whole frame read, the parsed header, and any error.
+// Returns ErrResponseStatusNotOK if the frame header indicated error.
+// The payload may have more information about the error and is
+// returned even when returning ErrResponseStatusNotOK.
 func (tk TillitisKey) ReadFrame(expectedResp Cmd, expectedID int) ([]byte, FramingHdr, error) {
 	if expectedID > 3 {
 		return nil, FramingHdr{}, fmt.Errorf("frame ID to expect must be 0..3")
@@ -239,14 +239,20 @@ func (tk TillitisKey) ReadFrame(expectedResp Cmd, expectedID int) ([]byte, Frami
 
 	if hdr.ResponseNotOK {
 		err = ErrResponseStatusNotOK
-		// We still need to read out the data/payload, note that
-		// ReadFull() overrides any timeout set using SetReadTimeout()
-		rest := make([]byte, hdr.CmdLen.Bytelen())
-		if _, readErr := io.ReadFull(tk.conn, rest); readErr != nil {
+		// Read out the payload and return it anyway, to let
+		// the application decide what to do. There might be
+		// information about the error in the payload.
+		//
+		// Note that ReadFull() overrides any timeout set
+		// using SetReadTimeout()
+		rx := make([]byte, 1+hdr.CmdLen.Bytelen())
+		if _, readErr := io.ReadFull(tk.conn, rx[1:]); readErr != nil {
 			// NOTE: go 1.20 has errors.Join()
 			err = fmt.Errorf("%w; ReadFull: %w", ErrResponseStatusNotOK, readErr)
+			return nil, hdr, err
 		}
-		return nil, hdr, err
+		rx[0] = rxHdr[0]
+		return rx, hdr, err
 	}
 
 	if hdr.CmdLen != expectedResp.CmdLen() {
