@@ -146,7 +146,7 @@ func parseframe(b byte) (FramingHdr, error) {
 // Note that the number of bytes indicated by the command data length
 // field does **not** include the header byte. This means that a
 // complete command frame, with a header indicating a command length
-// of 128 bytes, is 127 bytes in length.
+// of 128 bytes, is 128+1 bytes in length.
 func NewFrameBuf(cmd Cmd, id int) ([]byte, error) {
 	if id > 3 {
 		return nil, fmt.Errorf("frame ID must be 0..3")
