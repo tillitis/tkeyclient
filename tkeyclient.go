@@ -150,7 +150,8 @@ func (tk TillitisKey) GetNameVersion() (*NameVersion, error) {
 
 	rx, _, err := tk.ReadFrame(rspGetNameVersion, id)
 	if err != nil {
-		return nil, fmt.Errorf("ReadFrame: %w", err)
+		readTimeoutErr := tk.SetReadTimeout(0)
+		return nil, fmt.Errorf("ReadFrame: %w (undoing read-timeout: %w)", err, readTimeoutErr)
 	}
 
 	if err = tk.SetReadTimeout(0); err != nil {
