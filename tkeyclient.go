@@ -163,6 +163,35 @@ func (tk TillitisKey) GetNameVersion() (*NameVersion, error) {
 	return nameVer, nil
 }
 
+// GetNameVersion gets the name and version from the TKey firmware
+func (tk TillitisKey) StartAppFlash() error {
+	id := 2
+	tx, err := NewFrameBuf(cmdStartAppFlash, id)
+	if err != nil {
+		return err
+	}
+
+	Dump("StartAppFlash tx", tx)
+	if err = tk.Write(tx); err != nil {
+		return err
+	}
+
+	if err = tk.SetReadTimeout(2); err != nil {
+		return err
+	}
+
+	_, _, err = tk.ReadFrame(rspStartAppFlash, id)
+	if err != nil {
+		return fmt.Errorf("ReadFrame: %w", err)
+	}
+
+	if err = tk.SetReadTimeout(0); err != nil {
+		return fmt.Errorf("SetReadTimeout: %w", err)
+	}
+
+	return nil
+}
+
 // Modelled after how tpt.py (in tillitis-key1 repo) generates the UDI
 type UDI struct {
 	Unnamed         uint8 // 4 bits, hardcoded to 0 by tpt.py

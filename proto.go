@@ -61,6 +61,8 @@ var (
 	rspLoadAppDataReady = fwCmd{0x07, "rspLoadAppDataReady", CmdLen128}
 	cmdGetUDI           = fwCmd{0x08, "cmdGetUDI", CmdLen1}
 	rspGetUDI           = fwCmd{0x09, "rspGetUDI", CmdLen32}
+	cmdStartAppFlash    = fwCmd{0xF0, "cmdStartAppFlash", CmdLen1}
+	rspStartAppFlash    = fwCmd{0xF1, "rspStartAppFlash", CmdLen1}
 )
 
 type fwCmd struct {
