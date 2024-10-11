@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-FileCopyrightText: 2022 Tillitis AB <tillitis.se>
+# SPDX-License-Identifier: BSD-2-Clause
 set -eu
 
 # Check for the SPDX tag in all files in the repo. Exit with a non-zero code if
@@ -19,6 +21,7 @@ missingok_files=(
 .gitignore
 .golangci.yml
 LICENSE
+LICENSES/BSD-2-Clause.txt
 Makefile
 README.md
 RELEASE.md
