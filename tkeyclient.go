@@ -52,6 +52,9 @@ const (
 	// Codes used in app proto responses
 	StatusOK  = 0x00
 	StatusBad = 0x01
+
+	// Size of RAM in the TKey. See TK1_APP_MAX_SIZE in tk1_mem.h
+	AppMaxSize = 0x20000
 )
 
 // TillitisKey is a serial connection to a TKey and the commands that
@@ -273,7 +276,7 @@ func (tk TillitisKey) LoadAppFromFile(fileName string, secretPhrase []byte) erro
 // expected USS is used.
 func (tk TillitisKey) LoadApp(bin []byte, secretPhrase []byte) error {
 	binLen := len(bin)
-	if binLen > 100*1024 { // TK1_APP_MAX_SIZE
+	if binLen > AppMaxSize {
 		return fmt.Errorf("File too big")
 	}
 
