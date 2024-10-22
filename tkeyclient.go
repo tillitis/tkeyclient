@@ -35,6 +35,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/ccoveille/go-safecast"
 	"go.bug.st/serial"
 	"golang.org/x/crypto/blake2s"
 )
@@ -184,15 +185,37 @@ func (u *UDI) String() string {
 
 // Unpack unpacks the UDI parts from the raw 8 bytes (2 * 32-bit
 // words) sent on the wire.
-func (u *UDI) Unpack(raw []byte) {
+//
+// Returns any error
+func (u *UDI) Unpack(raw []byte) error {
+	var err error
+
 	vpr := binary.LittleEndian.Uint32(raw[0:4])
-	u.Unnamed = uint8((vpr >> 28) & 0xf)
-	u.VendorID = uint16((vpr >> 12) & 0xffff)
-	u.ProductID = uint8((vpr >> 6) & 0x3f)
-	u.ProductRevision = uint8(vpr & 0x3f)
+	u.Unnamed, err = safecast.ToUint8((vpr >> 28) & 0xf)
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	u.VendorID, err = safecast.ToUint16((vpr >> 12) & 0xffff)
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	u.ProductID, err = safecast.ToUint8((vpr >> 6) & 0x3f)
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	u.ProductRevision, err = safecast.ToUint8(vpr & 0x3f)
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
 	u.Serial = binary.LittleEndian.Uint32(raw[4:8])
 	u.raw = make([]byte, len(raw))
 	copy(u.raw, raw)
+
+	return nil
 }
 
 // GetUDI gets the UDI (Unique Device ID) from the TKey firmware
@@ -218,7 +241,10 @@ func (tk TillitisKey) GetUDI() (*UDI, error) {
 	}
 
 	udi := &UDI{}
-	udi.Unpack(rx[3 : 3+8])
+	err = udi.Unpack(rx[3 : 3+8])
+	if err != nil {
+		return nil, fmt.Errorf("couldn't unpack UDI: %w", err)
+	}
 
 	return udi, nil
 }
