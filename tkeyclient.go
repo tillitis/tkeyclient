@@ -419,5 +419,5 @@ func printDigest(md [32]byte) {
 		}
 		digest += " "
 	}
-	le.Printf(digest + "\n")
+	le.Print(digest + "\n")
 }
