@@ -108,10 +108,13 @@ func (tk TillitisKey) Close() error {
 	return nil
 }
 
-// SetReadTimeout sets the timeout of the underlying serial connection
-// to the TKey. Pass 0 seconds to not have any timeout. Note that the
-// timeout implemented in the serial lib only works for simple Read().
-// E.g. io.ReadFull() will Read() until the buffer is full.
+// SetReadTimeout sets the timeout of the underlying serial connection to the
+// TKey. Pass 0 seconds to not have any timeout. Note that the timeout
+// implemented in the serial lib only works for simple Read(). E.g.
+// io.ReadFull() will Read() until the buffer is full.
+//
+// Deprecated: use SetReadTimeoutNoErr, which can more easily be used with
+// defer.
 func (tk TillitisKey) SetReadTimeout(seconds int) error {
 	var t time.Duration = -1
 	if seconds > 0 {
@@ -121,6 +124,26 @@ func (tk TillitisKey) SetReadTimeout(seconds int) error {
 		return fmt.Errorf("SetReadTimeout: %w", err)
 	}
 	return nil
+}
+
+// SetReadTimeoutNoErr sets the timeout, in seconds, of the underlying
+// serial connection to the TKey. Pass 0 seconds to not have any
+// timeout.
+//
+// Note that the timeout only works for simple Read(). E.g.
+// io.ReadFull() will still read until the buffer is full.
+func (tk TillitisKey) SetReadTimeoutNoErr(seconds int) {
+	var t time.Duration = -1 // disables timeout
+	if seconds > 0 {
+		t = time.Duration(seconds) * time.Second
+	}
+	if err := tk.conn.SetReadTimeout(t); err != nil {
+		// err != nil exclusively on invalid values of t,
+		// which is handled before the call. Panic only
+		// possible for API change in go.bug.st/serial
+		panic(fmt.Sprintf("SetReadTimeout: %v", err))
+	}
+	return
 }
 
 type NameVersion struct {
