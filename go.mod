@@ -2,8 +2,6 @@ module github.com/tillitis/tkeyclient
 
 go 1.21
 
-toolchain go1.21.1
-
 require (
 	github.com/ccoveille/go-safecast v1.1.0
 	go.bug.st/serial v1.6.2
