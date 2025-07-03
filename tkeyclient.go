@@ -55,6 +55,12 @@ const (
 
 	// Size of RAM in the TKey. See TK1_APP_MAX_SIZE in tk1_mem.h
 	AppMaxSize = 0x20000
+
+	// UDI Product IDs
+	UDIPIDEngSample = 0 // XXX Also used for development purposes
+	UDIPIDAcrab     = 1
+	UDIPIDBellatrix = 2
+	UDIPIDCastor    = 3
 )
 
 // TillitisKey is a serial connection to a TKey and the commands that
