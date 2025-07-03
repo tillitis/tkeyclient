@@ -11,8 +11,10 @@ import (
 )
 
 const (
-	tillitisUSBVID = "1207"
-	tillitisUSBPID = "8887"
+	tillitisMTAUSBV1VID  = "1207"
+	tillitisMTAUSBV1PID  = "8887"
+	tillitisTKEYUSBV2VID = "1209"
+	tillitisTKEYUSBV2PID = "8885"
 	// Custom errors
 	ErrNoDevice    = constError("no TKey connected")
 	ErrManyDevices = constError("more than one TKey connected")
@@ -21,6 +23,11 @@ const (
 type SerialPort struct {
 	DevPath      string
 	SerialNumber string
+}
+
+func isTKey(vid string, pid string) bool {
+	return (vid == tillitisMTAUSBV1VID && pid == tillitisMTAUSBV1PID) ||
+		(vid == tillitisTKEYUSBV2VID && pid == tillitisTKEYUSBV2PID)
 }
 
 // DetectSerialPort tries to detect an inserted TKey and returns the
@@ -65,7 +72,7 @@ func GetSerialPorts() ([]SerialPort, error) {
 		return ports, nil
 	}
 	for _, port := range portDetails {
-		if port.IsUSB && port.VID == tillitisUSBVID && port.PID == tillitisUSBPID {
+		if port.IsUSB && isTKey(port.VID, port.PID) {
 			ports = append(ports, SerialPort{port.Name, port.SerialNumber})
 		}
 	}
