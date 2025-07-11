@@ -1,6 +1,13 @@
 # Release notes
 
+## Upcoming
+
+- Detect new Castor USB VID/PID and older TKey models.
+- Include helpful list of UDI Product ID.
+- Update x/crypto to v0.40.0.
+
 ## v1.1.0
+
 - Change license to BSD-2-Clause
 - Follow REUSE specification, see https://reuse.software/
 - Return payload even if NOK is set in header
