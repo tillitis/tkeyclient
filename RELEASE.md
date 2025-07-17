@@ -1,10 +1,14 @@
 # Release notes
 
-## Upcoming
+## v1.2.0
 
 - Detect new Castor USB VID/PID and older TKey models.
 - Include helpful list of UDI Product ID.
 - Update x/crypto to v0.40.0.
+
+Complete
+[changelog](https://github.com/tillitis/tkeyclient/compare/v1.1.0...v1.2.0).
+
 
 ## v1.1.0
 
