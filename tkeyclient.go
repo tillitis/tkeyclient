@@ -35,7 +35,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/ccoveille/go-safecast"
+	"github.com/ccoveille/go-safecast/v2"
 	"go.bug.st/serial"
 	"golang.org/x/crypto/blake2s"
 )
@@ -218,22 +218,22 @@ func (u *UDI) Unpack(raw []byte) error {
 	var err error
 
 	vpr := binary.LittleEndian.Uint32(raw[0:4])
-	u.Unnamed, err = safecast.ToUint8((vpr >> 28) & 0xf)
+	u.Unnamed, err = safecast.Convert[uint8]((vpr >> 28) & 0xf)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
-	u.VendorID, err = safecast.ToUint16((vpr >> 12) & 0xffff)
+	u.VendorID, err = safecast.Convert[uint16]((vpr >> 12) & 0xffff)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
-	u.ProductID, err = safecast.ToUint8((vpr >> 6) & 0x3f)
+	u.ProductID, err = safecast.Convert[uint8]((vpr >> 6) & 0x3f)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
-	u.ProductRevision, err = safecast.ToUint8(vpr & 0x3f)
+	u.ProductRevision, err = safecast.Convert[uint8](vpr & 0x3f)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
