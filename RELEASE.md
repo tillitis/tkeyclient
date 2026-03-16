@@ -9,7 +9,7 @@
   https://github.com/tillitis/tkeyclient/security/advisories/GHSA-4w7r-3222-8h6v
 
 Complete
-[changelog](https://github.com/tillitis/tkeyclient/compare/v1.1.0...v1.2.0).
+[changelog](https://github.com/tillitis/tkeyclient/compare/v1.2.0...v1.3.0).
 
 - Adds new option function WithFullUss() for use with Connect().
 
