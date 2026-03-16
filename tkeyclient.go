@@ -300,7 +300,7 @@ func (tk TillitisKey) LoadAppFromFile(fileName string, secretPhrase []byte) erro
 // LoadApp sends a device app in bin and optionally a User Supplied
 // Secret digest to the TKey.
 //
-// After succesfully sending the device app it computes a digest over
+// After successfully sending the device app it computes a digest over
 // bin and compares it to what was returned from the TKey, returning
 // an error if it isn't equal.
 //
@@ -327,7 +327,7 @@ func (tk TillitisKey) LoadApp(bin []byte, secretPhrase []byte) error {
 		return err
 	}
 
-	if err := tk.loadApp(binLen, secretPhrase, udi.ProductID); err != nil {
+	if err = tk.loadApp(binLen, secretPhrase, udi.ProductID); err != nil {
 		return err
 	}
 
