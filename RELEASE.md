@@ -1,5 +1,18 @@
 # Release notes
 
+## v1.3.0
+
+- Version v1.2.0 and earlier had a protocol vulnerability leaving some
+  USSs unused. A CDI generated from use of this package might be
+  changed since earlier versions! Read more here:
+
+  https://github.com/tillitis/tkeyclient/security/advisories/GHSA-4w7r-3222-8h6v
+
+Complete
+[changelog](https://github.com/tillitis/tkeyclient/compare/v1.1.0...v1.2.0).
+
+- Adds new option function WithFullUss() for use with Connect().
+
 ## v1.2.0
 
 - Detect new Castor USB VID/PID and older TKey models.
