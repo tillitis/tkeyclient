@@ -1,5 +1,14 @@
 # Release notes
 
+## v1.3.1
+
+- Treat USS digest for product ID 8 (TKey Unlocked) like Bellatrix to
+  be backwards compatible with everyone who has an Unlocked who use it
+  as Bellatrix.
+
+Complete
+[changelog](https://github.com/tillitis/tkeyclient/compare/v1.3.0...v1.3.1).
+
 ## v1.3.0
 
 - Version v1.2.0 and earlier had a protocol vulnerability leaving some
@@ -8,10 +17,10 @@
 
   https://github.com/tillitis/tkeyclient/security/advisories/GHSA-4w7r-3222-8h6v
 
+- Adds new option function WithFullUss() for use with Connect().
+
 Complete
 [changelog](https://github.com/tillitis/tkeyclient/compare/v1.2.0...v1.3.0).
-
-- Adds new option function WithFullUss() for use with Connect().
 
 ## v1.2.0
 

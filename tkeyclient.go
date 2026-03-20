@@ -57,10 +57,11 @@ const (
 	AppMaxSize = 0x20000
 
 	// UDI Product IDs
-	UDIPIDEngSample = 0 // XXX Also used for development purposes
-	UDIPIDAcrab     = 1
-	UDIPIDBellatrix = 2
-	UDIPIDCastor    = 3
+	UDIPIDEngSample         = 0 // XXX Also used for development purposes
+	UDIPIDAcrab             = 1
+	UDIPIDBellatrix         = 2
+	UDIPIDCastor            = 3
+	UDIPIDBellatrixUnlocked = 8
 )
 
 // TillitisKey is a serial connection to a TKey and the commands that
@@ -386,11 +387,28 @@ func (tk TillitisKey) loadApp(size int, secretPhrase []byte, pid uint8) error {
 		// Hash user's phrase as USS
 		uss := blake2s.Sum256(secretPhrase)
 
-		if pid >= UDIPIDCastor || tk.forceFullUss {
+		// Skip first byte of computed digest for backwards
+		// compatibility unless forced to send 32 bytes with
+		// the WithFullUss() option function or we have
+		// identified a Castor.
+		switch pid {
+		case UDIPIDCastor:
 			copy(tx[7:], uss[:])
-		} else {
-			// skip first byte for backwards compatibility, 31 byte uss
-			copy(tx[7:], uss[1:])
+
+		case UDIPIDEngSample:
+			fallthrough
+		case UDIPIDAcrab:
+			fallthrough
+		case UDIPIDBellatrix:
+			fallthrough
+		case UDIPIDBellatrixUnlocked:
+			fallthrough
+		default:
+			if tk.forceFullUss {
+				copy(tx[7:], uss[:])
+			} else {
+				copy(tx[7:], uss[1:])
+			}
 		}
 	}
 
