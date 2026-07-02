@@ -61,6 +61,7 @@ var (
 	rspLoadAppDataReady = fwCmd{0x07, "rspLoadAppDataReady", CmdLen128}
 	cmdGetUDI           = fwCmd{0x08, "cmdGetUDI", CmdLen1}
 	rspGetUDI           = fwCmd{0x09, "rspGetUDI", CmdLen32}
+	cmdReset            = appCmd{0xfe, "cmdReset", CmdLen4}
 )
 
 type fwCmd struct {
@@ -82,6 +83,28 @@ func (c fwCmd) Endpoint() Endpoint {
 }
 
 func (c fwCmd) String() string {
+	return c.name
+}
+
+type appCmd struct {
+	code   byte
+	name   string
+	cmdLen CmdLen
+}
+
+func (c appCmd) Code() byte {
+	return c.code
+}
+
+func (c appCmd) CmdLen() CmdLen {
+	return c.cmdLen
+}
+
+func (c appCmd) Endpoint() Endpoint {
+	return DestApp
+}
+
+func (c appCmd) String() string {
 	return c.name
 }
 

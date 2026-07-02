@@ -202,6 +202,24 @@ func (tk TillitisKey) GetNameVersion() (*NameVersion, error) {
 	return nameVer, nil
 }
 
+func (tk TillitisKey) Reset(t ResetType, d NextAppData) error {
+	id := 2
+
+	tx, err := NewFrameBuf(cmdReset, id)
+	if err != nil {
+		return err
+	}
+
+	tx[2] = uint8(t)
+	tx[3] = uint8(d)
+
+	if err = tk.Write(tx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Modelled after how tpt.py (in tillitis-key1 repo) generates the UDI
 type UDI struct {
 	Unnamed         uint8 // 4 bits, hardcoded to 0 by tpt.py
