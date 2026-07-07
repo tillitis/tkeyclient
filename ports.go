@@ -4,6 +4,7 @@
 package tkeyclient
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -77,4 +78,58 @@ func GetSerialPorts() ([]SerialPort, error) {
 		}
 	}
 	return ports, nil
+}
+
+func serialNrByPath(path string) (string, error) {
+	ports, err := GetSerialPorts()
+	if err != nil {
+		return "", fmt.Errorf("%w", err)
+	}
+
+	snr := ""
+	found := false
+
+	for _, port := range ports {
+		if port.DevPath == path {
+			if found {
+				return "", errors.New("found multiple TKeys with same serial number")
+			}
+
+			snr = port.SerialNumber
+			found = true
+		}
+	}
+
+	if found {
+		return snr, nil
+	}
+
+	return "", errors.New("could not find serial number")
+}
+
+func pathBySerialNr(snr string) (string, error) {
+	ports, err := GetSerialPorts()
+	if err != nil {
+		return "", fmt.Errorf("%w", err)
+	}
+
+	path := ""
+	found := false
+
+	for _, port := range ports {
+		if port.SerialNumber == snr {
+			if found {
+				return "", errors.New("found multiple TKeys with same device path")
+			}
+
+			path = port.DevPath
+			found = true
+		}
+	}
+
+	if found {
+		return path, nil
+	}
+
+	return "", errors.New("could not find device path")
 }

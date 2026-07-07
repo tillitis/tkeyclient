@@ -29,6 +29,7 @@ package tkeyclient
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -70,6 +71,7 @@ type TillitisKey struct {
 	speed        int
 	conn         serial.Port
 	forceFullUss bool
+	usbSerial    string
 }
 
 // New allocates a new TillitisKey. Use the Connect() method to
@@ -104,6 +106,22 @@ func (tk *TillitisKey) Connect(port string, options ...func(*TillitisKey)) error
 		opt(tk)
 	}
 
+	err = tk.open(port)
+	if err != nil {
+		return fmt.Errorf("Connect: %w", err)
+	}
+
+	tk.usbSerial, err = serialNrByPath(port)
+	if err != nil {
+		return fmt.Errorf("Connect: %w", err)
+	}
+
+	return nil
+}
+
+func (tk *TillitisKey) open(port string) error {
+	var err error
+
 	tk.conn, err = serial.Open(port, &serial.Mode{BaudRate: tk.speed})
 	if err != nil {
 		// Ensure this value is nil, because Open returns an interface
@@ -123,6 +141,96 @@ func (tk TillitisKey) Close() error {
 		return fmt.Errorf("conn.Close: %w", err)
 	}
 	return nil
+}
+
+// Reconnect reconnects to a previously connected TKey. If the TKey is
+// connected it will be closed before reconnecting. Will timeout if taking too
+// long.
+func (tk *TillitisKey) Reconnect() error {
+	var devPath string
+	var err error
+	retryAttempts := 10
+	retryDelay := 100 * time.Millisecond
+	timeout := 10 * time.Second
+
+	_ = tk.Close()
+
+	for retryAttempts > 0 {
+		// Find TKey by USB serial number
+		startTime := time.Now()
+		for time.Since(startTime) < timeout {
+			devPath, err = pathBySerialNr(tk.usbSerial)
+			le.Printf("pathBySerial: '%s', '%v'...\n", devPath, err)
+			if err == nil {
+				break
+			}
+			time.Sleep(retryDelay)
+		}
+		if err != nil {
+			fmt.Printf("couldn't find TKey\n")
+			return fmt.Errorf("Reconnect: %w", err)
+		}
+
+		// On Linux we might get an "Open /dev/ttyACM0: Permission denied"
+		// error if we try to reconnect to soon. So we try until we succeed or
+		// timeout.
+		startTime = time.Now()
+		for time.Since(startTime) < timeout {
+			err = tk.open(devPath)
+			if err == nil {
+				break
+			}
+			time.Sleep(retryDelay)
+		}
+		if err != nil {
+			tk.Close()
+			return fmt.Errorf("Reconnect: %w", err)
+		}
+
+		// On Linux and Windows it seems like we can connect to the
+		// port that we previously closed. Here we check if we can read
+		// from the open port and if not then we close the port and try
+		// to find the TKey by serial number again.
+		var n int
+		_ = tk.SetReadTimeout(1)
+		n, err = tk.conn.Read([]byte{0})
+		if n == 0 {
+			le.Printf("Reconnect done tk.conn=%p\n", tk.conn)
+			err = tk.SetReadTimeout(0)
+			if err != nil {
+				return fmt.Errorf("Reconnect: %w", err)
+			}
+			return nil
+		}
+
+		tk.Close()
+		retryAttempts--
+	}
+
+	return errors.New("Reconnect: timeout")
+}
+
+// WaitClosed waits until the underlying serial port is closed.
+func (tk TillitisKey) WaitClosed() error {
+	var err error
+	timeout := 10 * time.Second
+
+	defer func() { _ = tk.SetReadTimeout(0) }()
+	startTime := time.Now()
+	for time.Since(startTime) < timeout {
+		err = tk.SetReadTimeout(1)
+		if err != nil {
+			return fmt.Errorf("WaitClosed: %w", err)
+		}
+
+		// Try to read a byte. Treat any error as port closed.
+		_, err = tk.conn.Read([]byte{0})
+		if err != nil {
+			return nil
+		}
+	}
+
+	return errors.New("WaitClosed: timeout")
 }
 
 // SetReadTimeout sets the timeout of the underlying serial connection to the
