@@ -68,10 +68,12 @@ const (
 // TillitisKey is a serial connection to a TKey and the commands that
 // the firmware supports.
 type TillitisKey struct {
-	speed        int
-	conn         serial.Port
-	forceFullUss bool
-	usbSerial    string
+	speed          int
+	conn           serial.Port
+	forceFullUss   bool
+	usbSerial      string
+	isUSBDevice    bool
+	canRemoteClose bool
 }
 
 // New allocates a new TillitisKey. Use the Connect() method to
@@ -95,6 +97,21 @@ func WithFullUss() func(*TillitisKey) {
 	}
 }
 
+// Option to disable features requiring USB functionality
+func NotUSBDevice() func(*TillitisKey) {
+	return func(tk *TillitisKey) {
+		tk.isUSBDevice = false
+	}
+}
+
+// Option to disable features that require serial port to be closed by the
+// TKey.
+func NoRemoteClose() func(*TillitisKey) {
+	return func(tk *TillitisKey) {
+		tk.canRemoteClose = false
+	}
+}
+
 // Connect connects to a TKey serial port using the provided port
 // device and options.
 func (tk *TillitisKey) Connect(port string, options ...func(*TillitisKey)) error {
@@ -102,6 +119,8 @@ func (tk *TillitisKey) Connect(port string, options ...func(*TillitisKey)) error
 
 	tk.speed = SerialSpeed
 	tk.forceFullUss = false
+	tk.isUSBDevice = true
+	tk.canRemoteClose = true
 	for _, opt := range options {
 		opt(tk)
 	}
@@ -111,9 +130,11 @@ func (tk *TillitisKey) Connect(port string, options ...func(*TillitisKey)) error
 		return fmt.Errorf("Connect: %w", err)
 	}
 
-	tk.usbSerial, err = serialNrByPath(port)
-	if err != nil {
-		return fmt.Errorf("Connect: %w", err)
+	if tk.isUSBDevice {
+		tk.usbSerial, err = serialNrByPath(port)
+		if err != nil {
+			return fmt.Errorf("Connect: %w", err)
+		}
 	}
 
 	return nil
@@ -143,15 +164,20 @@ func (tk TillitisKey) Close() error {
 	return nil
 }
 
-// Reconnect reconnects to a previously connected TKey. If the TKey is
-// connected it will be closed before reconnecting. Will timeout if taking too
-// long.
+// Reconnect reconnects to a previously connected TKey. Will timeout if taking
+// too long.
 func (tk *TillitisKey) Reconnect() error {
 	var devPath string
 	var err error
 	retryAttempts := 10
 	retryDelay := 100 * time.Millisecond
 	timeout := 10 * time.Second
+
+	if !tk.canRemoteClose {
+		le.Printf("Skipping reconnect")
+		time.Sleep(time.Second / 2)
+		return nil
+	}
 
 	_ = tk.Close()
 
@@ -214,6 +240,12 @@ func (tk *TillitisKey) Reconnect() error {
 func (tk TillitisKey) WaitClosed() error {
 	var err error
 	timeout := 10 * time.Second
+
+	if !tk.canRemoteClose {
+		le.Printf("Skipping port closed detection")
+		time.Sleep(time.Second / 2)
+		return nil
+	}
 
 	defer func() { _ = tk.SetReadTimeout(0) }()
 	startTime := time.Now()
