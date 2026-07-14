@@ -217,12 +217,6 @@ func (tk TillitisKey) Write(d []byte) error {
 	return nil
 }
 
-type constError string
-
-func (err constError) Error() string {
-	return string(err)
-}
-
 const ErrResponseStatusNotOK = constError("response status not OK")
 
 // ReadFrame reads a response in the framing protocol. It expects the

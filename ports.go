@@ -24,11 +24,16 @@ const (
 type SerialPort struct {
 	DevPath      string
 	SerialNumber string
+	CanReset     bool
 }
 
 func isTKey(vid string, pid string) bool {
 	return (vid == tillitisMTAUSBV1VID && pid == tillitisMTAUSBV1PID) ||
 		(vid == tillitisTKEYUSBV2VID && pid == tillitisTKEYUSBV2PID)
+}
+
+func canReset(vid string, pid string) bool {
+	return vid == tillitisTKEYUSBV2VID && pid == tillitisTKEYUSBV2PID
 }
 
 // DetectSerialPort tries to detect an inserted TKey and returns the
@@ -74,7 +79,13 @@ func GetSerialPorts() ([]SerialPort, error) {
 	}
 	for _, port := range portDetails {
 		if port.IsUSB && isTKey(port.VID, port.PID) {
-			ports = append(ports, SerialPort{port.Name, port.SerialNumber})
+			ports = append(ports,
+				SerialPort{
+					port.Name,
+					port.SerialNumber,
+					canReset(port.VID, port.PID),
+				},
+			)
 		}
 	}
 	return ports, nil
