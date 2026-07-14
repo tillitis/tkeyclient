@@ -181,6 +181,10 @@ func (tk *TillitisKey) Reconnect() error {
 		return fmt.Errorf("Reconnect: %w", ErrUnsupported)
 	}
 
+	if tk.usbSerial == "" {
+		return errors.New("invalid serial nr")
+	}
+
 	_ = tk.Close()
 
 	for retryAttempts > 0 {
