@@ -91,6 +91,31 @@ func GetSerialPorts() ([]SerialPort, error) {
 	return ports, nil
 }
 
+func autodetectDevice(path string) (SerialPort, error) {
+	var dev SerialPort
+
+	if path == "" {
+		ports, err := GetSerialPorts()
+		if err != nil || len(ports) == 0 {
+			return dev, errors.New("no device found")
+		}
+
+		if len(ports) > 1 {
+			return dev, errors.New("too many devices")
+		}
+		dev = ports[0]
+	} else {
+		var err error
+
+		dev, err = serialPortFromPath(path)
+		if err != nil {
+			return dev, errors.New("")
+		}
+	}
+
+	return dev, nil
+}
+
 func serialPortFromPath(path string) (SerialPort, error) {
 	var dev SerialPort
 

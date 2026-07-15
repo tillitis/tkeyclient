@@ -117,6 +117,16 @@ func NoRemoteClose() func(*TillitisKey) {
 
 // Connect connects to a TKey serial port using the provided port
 // device and options.
+//
+// If port is "" it looks for attached TKey devices and if it's only
+// one it connects to that device. If it doesn't find any or there is
+// more than one it returns an error.
+//
+// Use options WithSpeed(), WithFullUss(), NotUSBDevice(), or
+// NoRemoteClose() to alter the connection.
+//
+// To run against QEMU for development purposes, use the NotUSBDevice()
+// and NoRemoteClose() options.
 func (tk *TillitisKey) Connect(port string, options ...func(*TillitisKey)) error {
 	var err error
 
@@ -128,32 +138,24 @@ func (tk *TillitisKey) Connect(port string, options ...func(*TillitisKey)) error
 		opt(tk)
 	}
 
-	var dev SerialPort
+	if tk.isUSBDevice {
+		var dev SerialPort
 
-	if port == "" {
-		ports, err := GetSerialPorts()
-		if err != nil || len(ports) == 0 {
-			// No devices.
-		}
-
-		if len(ports) > 1 {
-			// Too many
-		}
-		dev = ports[0]
-		port = dev.DevPath
-	} else {
-		var err error
-
-		dev, err = serialPortFromPath(port)
+		dev, err = autodetectDevice(port)
 		if err != nil {
-			panic(err)
+			return err
 		}
+
+		tk.path = dev.DevPath
+		tk.CanRemoteClose = dev.CanRemoteClose
+		tk.usbSerial = dev.SerialNumber
+	} else {
+		// Not a USB device, presumed to be QEMU
+		tk.path = port
+		tk.usbSerial = "qemu"
 	}
 
-	tk.CanRemoteClose = dev.CanRemoteClose
-	tk.usbSerial = dev.SerialNumber
-
-	err = tk.open(port)
+	err = tk.open(tk.path)
 	if err != nil {
 		return fmt.Errorf("Connect: %w", err)
 	}
