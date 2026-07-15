@@ -22,9 +22,9 @@ const (
 )
 
 type SerialPort struct {
-	DevPath      string
-	SerialNumber string
-	CanReset     bool
+	DevPath        string
+	SerialNumber   string
+	CanRemoteClose bool
 }
 
 func isTKey(vid string, pid string) bool {
@@ -91,31 +91,32 @@ func GetSerialPorts() ([]SerialPort, error) {
 	return ports, nil
 }
 
-func serialNrByPath(path string) (string, error) {
+func serialPortFromPath(path string) (SerialPort, error) {
+	var dev SerialPort
+
 	ports, err := GetSerialPorts()
 	if err != nil {
-		return "", fmt.Errorf("%w", err)
+		return dev, fmt.Errorf("%w", err)
 	}
 
-	snr := ""
 	found := false
 
 	for _, port := range ports {
 		if port.DevPath == path {
 			if found {
-				return "", errors.New("found multiple TKeys with same serial number")
+				return dev, errors.New("found multiple TKeys with same serial number")
 			}
 
-			snr = port.SerialNumber
+			dev = port
 			found = true
 		}
 	}
 
 	if found {
-		return snr, nil
+		return dev, nil
 	}
 
-	return "", errors.New("could not find serial number")
+	return dev, errors.New("could not find serial number")
 }
 
 func pathBySerialNr(snr string) (string, error) {

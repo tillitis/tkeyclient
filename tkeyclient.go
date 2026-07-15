@@ -70,12 +70,13 @@ const (
 // TillitisKey is a serial connection to a TKey and the commands that
 // the firmware supports.
 type TillitisKey struct {
+	path           string
 	speed          int
 	conn           serial.Port
 	forceFullUss   bool
 	usbSerial      string
 	isUSBDevice    bool
-	canRemoteClose bool
+	CanRemoteClose bool
 }
 
 // New allocates a new TillitisKey. Use the Connect() method to
@@ -110,7 +111,7 @@ func NotUSBDevice() func(*TillitisKey) {
 // TKey.
 func NoRemoteClose() func(*TillitisKey) {
 	return func(tk *TillitisKey) {
-		tk.canRemoteClose = false
+		tk.CanRemoteClose = false
 	}
 }
 
@@ -122,21 +123,39 @@ func (tk *TillitisKey) Connect(port string, options ...func(*TillitisKey)) error
 	tk.speed = SerialSpeed
 	tk.forceFullUss = false
 	tk.isUSBDevice = true
-	tk.canRemoteClose = true
+	tk.CanRemoteClose = true
 	for _, opt := range options {
 		opt(tk)
 	}
 
+	var dev SerialPort
+
+	if port == "" {
+		ports, err := GetSerialPorts()
+		if err != nil || len(ports) == 0 {
+			// No devices.
+		}
+
+		if len(ports) > 1 {
+			// Too many
+		}
+		dev = ports[0]
+		port = dev.DevPath
+	} else {
+		var err error
+
+		dev, err = serialPortFromPath(port)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	tk.CanRemoteClose = dev.CanRemoteClose
+	tk.usbSerial = dev.SerialNumber
+
 	err = tk.open(port)
 	if err != nil {
 		return fmt.Errorf("Connect: %w", err)
-	}
-
-	if tk.isUSBDevice {
-		tk.usbSerial, err = serialNrByPath(port)
-		if err != nil {
-			return fmt.Errorf("Connect: %w", err)
-		}
 	}
 
 	return nil
@@ -175,7 +194,7 @@ func (tk *TillitisKey) Reconnect() error {
 	retryDelay := 100 * time.Millisecond
 	timeout := 10 * time.Second
 
-	if !tk.canRemoteClose {
+	if !tk.CanRemoteClose {
 		le.Printf("Skipping reconnect")
 		time.Sleep(time.Second / 2)
 		return fmt.Errorf("Reconnect: %w", ErrUnsupported)
@@ -247,7 +266,7 @@ func (tk TillitisKey) WaitClosed() error {
 	var err error
 	timeout := 10 * time.Second
 
-	if !tk.canRemoteClose {
+	if !tk.CanRemoteClose {
 		le.Printf("Skipping port closed detection")
 		time.Sleep(time.Second / 2)
 		return nil
