@@ -199,7 +199,7 @@ func (tk *TillitisKey) Reconnect() error {
 	if !tk.CanRemoteClose {
 		le.Printf("Skipping reconnect")
 		time.Sleep(time.Second / 2)
-		return fmt.Errorf("Reconnect: %w", ErrUnsupported)
+		return nil
 	}
 
 	if tk.usbSerial == "" {
