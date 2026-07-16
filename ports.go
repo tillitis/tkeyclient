@@ -19,6 +19,7 @@ const (
 	// Custom errors
 	ErrNoDevice    = constError("no TKey connected")
 	ErrManyDevices = constError("more than one TKey connected")
+	ErrPortClosed  = constError("connection closed")
 )
 
 type SerialPort struct {
