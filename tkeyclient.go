@@ -177,18 +177,21 @@ func (tk *TillitisKey) open(port string) error {
 }
 
 // Close the connection to the TKey
-func (tk TillitisKey) Close() error {
+func (tk *TillitisKey) Close() error {
 	if tk.conn == nil {
 		return nil
 	}
 	if err := tk.conn.Close(); err != nil {
 		return fmt.Errorf("conn.Close: %w", err)
 	}
+
+	tk.conn = nil
+
 	return nil
 }
 
 // Reconnect reconnects to a previously connected TKey Castor. Will timeout if
-// taking too long.
+// taking too long. Will do nothing if already connected.
 func (tk *TillitisKey) Reconnect() error {
 	var devPath string
 	var err error
@@ -196,17 +199,13 @@ func (tk *TillitisKey) Reconnect() error {
 	retryDelay := 100 * time.Millisecond
 	timeout := 10 * time.Second
 
-	if !tk.CanRemoteClose {
-		le.Printf("Skipping reconnect")
-		time.Sleep(time.Second / 2)
+	if tk.conn != nil {
 		return nil
 	}
 
 	if tk.usbSerial == "" {
 		return errors.New("invalid serial nr")
 	}
-
-	_ = tk.Close()
 
 	for retryAttempts > 0 {
 		// Find TKey by USB serial number
@@ -264,7 +263,7 @@ func (tk *TillitisKey) Reconnect() error {
 }
 
 // WaitClosed waits until the underlying serial port is closed.
-func (tk TillitisKey) WaitClosed() error {
+func (tk *TillitisKey) WaitClosed() error {
 	var err error
 	timeout := 10 * time.Second
 
@@ -285,6 +284,7 @@ func (tk TillitisKey) WaitClosed() error {
 		// Try to read a byte. Treat any error as port closed.
 		_, err = tk.conn.Read([]byte{0})
 		if err != nil {
+			tk.Close()
 			return nil
 		}
 	}
@@ -301,6 +301,11 @@ func (tk TillitisKey) WaitClosed() error {
 // defer.
 func (tk TillitisKey) SetReadTimeout(seconds int) error {
 	var t time.Duration = -1
+
+	if tk.conn == nil {
+		return ErrPortClosed
+	}
+
 	if seconds > 0 {
 		t = time.Duration(seconds) * time.Second
 	}
