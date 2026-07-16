@@ -109,7 +109,7 @@ func autodetectDevice(path string) (SerialPort, error) {
 
 		dev, err = serialPortFromPath(path)
 		if err != nil {
-			return dev, errors.New("")
+			return dev, fmt.Errorf("port not found: %w", err)
 		}
 	}
 
