@@ -63,6 +63,8 @@ const (
 	UDIPIDBellatrix         = 2
 	UDIPIDCastor            = 3
 	UDIPIDBellatrixUnlocked = 8
+
+	ErrUnsupported = constError("unsupported")
 )
 
 // TillitisKey is a serial connection to a TKey and the commands that
@@ -164,8 +166,8 @@ func (tk TillitisKey) Close() error {
 	return nil
 }
 
-// Reconnect reconnects to a previously connected TKey. Will timeout if taking
-// too long.
+// Reconnect reconnects to a previously connected TKey Castor. Will timeout if
+// taking too long.
 func (tk *TillitisKey) Reconnect() error {
 	var devPath string
 	var err error
@@ -176,7 +178,7 @@ func (tk *TillitisKey) Reconnect() error {
 	if !tk.canRemoteClose {
 		le.Printf("Skipping reconnect")
 		time.Sleep(time.Second / 2)
-		return nil
+		return fmt.Errorf("Reconnect: %w", ErrUnsupported)
 	}
 
 	_ = tk.Close()
