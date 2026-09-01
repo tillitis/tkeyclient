@@ -1,19 +1,34 @@
 // SPDX-FileCopyrightText: 2022 Tillitis AB <tillitis.se>
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Package tkeyclient provides a connection to a Tillitis TKey
-// security stick. To create a new connection:
+// Package tkeyclient provides a connection to a Tillitis TKey. To
+// create a new connection:
 //
 //	tk := tkeyclient.New()
 //	err := tk.Connect(port)
 //
-// Then you can start using it by asking it to identify itself:
+// See documentation for Connect() for the options you can use.
+//
+// After successfully running Connect() you can start using it by
+// probing for firmware with, for instance:
 //
 //	nameVer, err := tk.GetNameVersion()
 //
-// Or loading and starting an app on the stick:
+// or to get full, specific device ID:
 //
-//	err = tk.LoadAppFromFile(*fileName)
+//	deviceId, err := tk.GetUDI()
+//
+// If an app is already running all firmware commands will return
+// ErrResponseStatusNotOK if the app follows the recommended
+// conventions.
+//
+// Load and start an app from file by doing:
+//
+//	err = tk.LoadAppFromFile(fileName)
+//
+// or like this if you already have the app in a variable:
+//
+//	err = tk.LoadApp(app)
 //
 // After this, you will have to switch to a new protocol specific to
 // the app, see for instance the Go package
@@ -22,9 +37,36 @@
 //
 // https://github.com/tillitis/tkey-device-signer
 //
-// When writing your app specific protocol you might still want to use
-// the framing protocol provided here. See NewFrameBuf() and
-// ReadFrame().
+// When you're done talking to a TKey, use Close(), so other processes
+// can talk to the TKey, too. Note that on some TKey models the device
+// itself can close a connection, typically after a device app has
+// reset the device either by client request or when it has finished
+// its task.
+//
+// If you're initiating a reset from your client you might want to use
+// WaitClosed() to know when the device has been reset.
+//
+// The firmware protocol functions are:
+//
+// - GetNameVersion()
+// - GetUDI()
+// - LoadAppFromFile()
+// - LoadApp()
+//
+// Helper functions not necessarily used just for firmware that you
+// probably also want to use with your app protocol:
+//
+// - New()
+// - Connect()
+// - Close()
+// - Dump()
+// - NewFrameBuf()
+// - ReadFrame()
+// - Reconnect()
+// - Reset()
+// - SetReadTimeout() / SetReadTimeoutNoErr()
+// - WaitClosed()
+// - Write()
 package tkeyclient
 
 import (
@@ -100,7 +142,8 @@ func WithFullUss() func(*TillitisKey) {
 	}
 }
 
-// Option to disable features requiring USB functionality
+// Option to disable features requiring USB functionality. Useful when
+// running against an emulator.
 func NotUSBDevice() func(*TillitisKey) {
 	return func(tk *TillitisKey) {
 		tk.isUSBDevice = false
@@ -262,7 +305,8 @@ func (tk *TillitisKey) Reconnect() error {
 	return errors.New("Reconnect: timeout")
 }
 
-// WaitClosed waits until the underlying serial port is closed.
+// WaitClosed waits until the underlying serial port is closed from
+// the device side.
 func (tk *TillitisKey) WaitClosed() error {
 	var err error
 	timeout := 10 * time.Second
@@ -347,7 +391,7 @@ func (n *NameVersion) Unpack(raw []byte) {
 	n.Version = binary.LittleEndian.Uint32(raw[8:12])
 }
 
-// GetNameVersion gets the name and version from the TKey firmware
+// GetNameVersion gets the name and version from the TKey firmware.
 func (tk TillitisKey) GetNameVersion() (*NameVersion, error) {
 	id := 2
 	tx, err := NewFrameBuf(cmdGetNameVersion, id)
@@ -374,6 +418,39 @@ func (tk TillitisKey) GetNameVersion() (*NameVersion, error) {
 	return nameVer, nil
 }
 
+// Reset requests a device app to reset the TKey. This is a device app
+// protocol request, not a firmware protocol request.
+//
+// All wellbehaved apps should implement this command and reset the
+// TKey.
+//
+// t is the reset type:
+//
+//   - RstTypeStartDefault - Same as RstTypeStartFlash0.
+//
+//   - RstTypeStartFlash0 - Start a measured app in slot 0. In a
+//     consumer TKey from Tillitis slot 0 is always the boot verifier,
+//     which verifies the next app.
+//
+//   - RstTypeStartFlash1 - Start a measured app in slot 1.
+//
+//   - RstTypeStartFlash0Ver - Start app slot 0 verified. The already
+//     running app must leave a verified digest when doing the reset.
+//
+//   - RstTypeStartFlash1Ver - Start app slot 1 verified. The already
+//     running app must leave a verified digest when doing the reset.
+//
+//   - RstTypeStartClient - Start a measured app loaded from the
+//     client. This means firmware will wait for the client to load an
+//     app.
+//
+//   - RstTypeStartClientVer - Start a verified app loaded from the
+//     client. The already running app must leave a verified digest of
+//     the next app. After the reset the firmware will wait for the
+//     client to load an app after the reset.
+//
+// d is the data you want to leave to the next app, currently only one
+// byte. The content is up to the two device apps.
 func (tk TillitisKey) Reset(t ResetType, d NextAppData) error {
 	id := 2
 
