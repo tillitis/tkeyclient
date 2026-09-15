@@ -449,8 +449,9 @@ func (tk TillitisKey) GetNameVersion() (*NameVersion, error) {
 //     the next app. After the reset the firmware will wait for the
 //     client to load an app after the reset.
 //
-// d is the data you want to leave to the next app, currently only one
-// byte. The content is up to the two device apps.
+// d is the data you want to leave to the next app, a 126 byte struct
+// that should be stored in next_app_data by the receiving device app.
+// The content is up to the two device apps.
 func (tk TillitisKey) Reset(t ResetType, d NextAppData) error {
 	id := 2
 
@@ -460,7 +461,9 @@ func (tk TillitisKey) Reset(t ResetType, d NextAppData) error {
 	}
 
 	tx[2] = uint8(t)
-	tx[3] = uint8(d)
+	copy(tx[3:], d[:])
+
+	Dump("Reset tx", tx)
 
 	if err = tk.Write(tx); err != nil {
 		return err

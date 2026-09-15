@@ -14,9 +14,17 @@ const (
 	RstTypeStartClientVer ResetType = 6
 )
 
-type NextAppData uint8
+type NextAppData [126]byte
 
-const (
-	VerifierBootSlot1 NextAppData = 0
-	VerifierCmdMode   NextAppData = 1
+// NewNextAppDataFromSlice creates a NextAppData from a byte slice.
+// Shorter slices are zero-padded; longer slices are truncated to 126 bytes.
+func NewNextAppDataFromSlice(b []byte) NextAppData {
+	var d NextAppData
+	copy(d[:], b)
+	return d
+}
+
+var (
+	VerifierBootSlot1 = NewNextAppDataFromSlice([]byte{0})
+	VerifierCmdMode   = NewNextAppDataFromSlice([]byte{1})
 )
