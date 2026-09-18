@@ -5,13 +5,10 @@ package tkeyclient
 type ResetType uint8
 
 const (
-	RstTypeStartDefault   ResetType = 0
-	RstTypeStartFlash0    ResetType = 1
-	RstTypeStartFlash1    ResetType = 2
-	RstTypeStartFlash0Ver ResetType = 3
-	RstTypeStartFlash1Ver ResetType = 4
-	RstTypeStartClient    ResetType = 5
-	RstTypeStartClientVer ResetType = 6
+	RstTypeStartFlash0    ResetType = 0
+	RstTypeStartFlash1Ver ResetType = 1
+	RstTypeStartClient    ResetType = 2
+	RstTypeStartClientVer ResetType = 3
 )
 
 type NextAppData [126]byte

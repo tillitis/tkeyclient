@@ -426,16 +426,9 @@ func (tk TillitisKey) GetNameVersion() (*NameVersion, error) {
 //
 // t is the reset type:
 //
-//   - RstTypeStartDefault - Same as RstTypeStartFlash0.
-//
 //   - RstTypeStartFlash0 - Start a measured app in slot 0. In a
 //     consumer TKey from Tillitis slot 0 is always the boot verifier,
 //     which verifies the next app.
-//
-//   - RstTypeStartFlash1 - Start a measured app in slot 1.
-//
-//   - RstTypeStartFlash0Ver - Start app slot 0 verified. The already
-//     running app must leave a verified digest when doing the reset.
 //
 //   - RstTypeStartFlash1Ver - Start app slot 1 verified. The already
 //     running app must leave a verified digest when doing the reset.
