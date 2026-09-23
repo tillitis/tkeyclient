@@ -61,6 +61,7 @@ var (
 	rspLoadAppDataReady = fwCmd{0x07, "rspLoadAppDataReady", CmdLen128}
 	cmdGetUDI           = fwCmd{0x08, "cmdGetUDI", CmdLen1}
 	rspGetUDI           = fwCmd{0x09, "rspGetUDI", CmdLen32}
+	cmdReset            = fwCmd{0xfe, "cmdReset", CmdLen128}
 	appCmdReset         = appCmd{0xfe, "appCmdReset", CmdLen128}
 )
 

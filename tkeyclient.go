@@ -418,8 +418,24 @@ func (tk TillitisKey) GetNameVersion() (*NameVersion, error) {
 	return nameVer, nil
 }
 
-// Reset requests a device app to reset the TKey. This is a device app
-// protocol request, not a firmware protocol request.
+// Firmware probe implemented as described in dev.tillitis.se/protocol.
+//
+// Returns true if the device accepts a get device name command on the firmware
+// endpoint.
+func (tk TillitisKey) firmwareActive() (bool, error) {
+	_, err := tk.GetNameVersion() // Sending a firmware command
+
+	if errors.Is(err, ErrResponseStatusNotOK) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+// Reset requests the active firmware or device app to reset the TKey.
 //
 // All wellbehaved apps should implement this command and reset the
 // TKey.
@@ -448,7 +464,17 @@ func (tk TillitisKey) GetNameVersion() (*NameVersion, error) {
 func (tk TillitisKey) Reset(t ResetType, d NextAppData) error {
 	id := 2
 
-	tx, err := NewFrameBuf(cmdReset, id)
+	isFw, err := tk.firmwareActive()
+	if err != nil {
+		return err
+	}
+
+	var cmd Cmd = appCmdReset
+	if isFw {
+		cmd = cmdReset
+	}
+
+	tx, err := NewFrameBuf(cmd, id)
 	if err != nil {
 		return err
 	}
