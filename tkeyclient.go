@@ -701,7 +701,8 @@ func (tk TillitisKey) loadApp(size int, secretPhrase []byte, pid uint8) error {
 		}
 	}
 
-	Dump("LoadApp tx", tx)
+	// Don't dump uss by default
+	Dump("LoadApp tx", tx[:5])
 	if err = tk.Write(tx); err != nil {
 		return err
 	}
