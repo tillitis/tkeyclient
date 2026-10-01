@@ -60,6 +60,7 @@
 // - Connect()
 // - Close()
 // - Dump()
+// - FirmwareActive()
 // - NewFrameBuf()
 // - ReadFrame()
 // - Reconnect()
@@ -422,7 +423,7 @@ func (tk TillitisKey) GetNameVersion() (*NameVersion, error) {
 //
 // Returns true if the device accepts a get device name command on the firmware
 // endpoint.
-func (tk TillitisKey) firmwareActive() (bool, error) {
+func (tk TillitisKey) FirmwareActive() (bool, error) {
 	_, err := tk.GetNameVersion() // Sending a firmware command
 
 	if errors.Is(err, ErrResponseStatusNotOK) {
@@ -464,7 +465,7 @@ func (tk TillitisKey) firmwareActive() (bool, error) {
 func (tk TillitisKey) Reset(t ResetType, d NextAppData) error {
 	id := 2
 
-	isFw, err := tk.firmwareActive()
+	isFw, err := tk.FirmwareActive()
 	if err != nil {
 		return err
 	}
