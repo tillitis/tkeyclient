@@ -1,5 +1,22 @@
 # Release notes
 
+## v1.4.0
+
+This release adds support for the newer features in the Castor version
+of TKey, such as reset.
+
+- Add support for resetting a TKey. Includes detecting if the TKey
+  supports it.
+- Add helper methods for reconnecting to the same TKey after a reset.
+- Add option to disable functionality requiring USB and remote port
+  close detection.
+- Add function to detect if firmware is running: FirmwareActive().
+- Connect() can now enumerate and find a TKey if the port argument is
+  the empty string.
+
+Complete
+[changelog](https://github.com/tillitis/tkeyclient/compare/v1.3.1...v1.4.0).
+
 ## v1.3.1
 
 - Treat USS digest for product ID 8 (TKey Unlocked) like Bellatrix to
